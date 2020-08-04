@@ -5,9 +5,19 @@
 # COMMAND ----------
 
 text_rdd = sc.textFile('/FileStore/tables/SampleText.txt') # RDD of string
-splitted_rdd = text_rdd.flatMap(lambda line: line.split(' ')) # RDD of list of string
-word_pair_rdd = splitted_rdd.map(lambda word: (word, 1))  # RDD of tuple (string, int)
-word_count_rdd = word_pair_rdd.reduceByKey(lambda cnt1, cnt2: cnt1 + cnt2) # RDD of tuple (string, int)
+
+def str_split(line):
+  return line.split(' ')
+splitted_rdd = text_rdd.flatMap(str_split) # RDD of list of string
+
+def word_pair(word):
+  return (word, 1)
+word_pair_rdd = splitted_rdd.map(word_pair)  # RDD of tuple (string, int)
+
+def sum(cnt1, cnt2):
+  return (cnt1 + cnt2)
+word_count_rdd = word_pair_rdd.reduceByKey(sum) # RDD of tuple (string, int)
+
 word_count_rdd.take(5) # list of tuple (string, int)
 
 
@@ -50,12 +60,14 @@ bigger_rdd.count()
 
 # COMMAND ----------
 
-bigger_rdd.glom().map(lambda rec: len(rec)).collect()
+def list_len(l):
+  return len(l)
+bigger_rdd.glom().map(list_len).collect()
 
 # COMMAND ----------
 
-bigger_rdd.repartition(10).saveAsTextFile('/FileStore/tables/biggerRdd/ten13')
-sc.textFile('/FileStore/tables/biggerRdd/ten13').getNumPartitions()
+bigger_rdd.repartition(10).saveAsTextFile('/FileStore/tables/biggerRdd/ten')
+sc.textFile('/FileStore/tables/biggerRdd/ten').getNumPartitions()
 
 
 # COMMAND ----------
@@ -64,8 +76,8 @@ bigger_rdd.repartition(10).glom().map(lambda rec: len(rec)).collect()
 
 # COMMAND ----------
 
-bigger_rdd.repartition(5).saveAsTextFile('/FileStore/tables/biggerRdd/four14')
-sc.textFile('/FileStore/tables/biggerRdd/four14').getNumPartitions()
+bigger_rdd.repartition(5).saveAsTextFile('/FileStore/tables/biggerRdd/four')
+sc.textFile('/FileStore/tables/biggerRdd/four').getNumPartitions()
 
 
 # COMMAND ----------
@@ -74,8 +86,8 @@ bigger_rdd.repartition(5).glom().map(lambda rec: len(rec)).collect()
 
 # COMMAND ----------
 
-bigger_rdd.coalesce(6).saveAsTextFile('dbfs:/FileStore/tables/biggerRdd/coalesce2')
-sc.textFile('/FileStore/tables/biggerRdd/coalesce2').getNumPartitions()
+bigger_rdd.coalesce(6).saveAsTextFile('dbfs:/FileStore/tables/biggerRdd/coalesce')
+sc.textFile('/FileStore/tables/biggerRdd/coalesce').getNumPartitions()
 
 # Homework: Is the number of records same in each of the partitions for both repartition() and coalesce()? Justify the full shufling meaning!
 
