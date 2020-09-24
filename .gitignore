@@ -1,2 +1,6 @@
 *.class
 *.log
+# mac
+.DS_Store
+
+
