@@ -1,6 +1,9 @@
 *.class
 *.log
 # mac
-.DS_Store
+*.DS_Store
+.secrets
+*.pem
+*.ppk
 
 
