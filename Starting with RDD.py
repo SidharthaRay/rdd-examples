@@ -4,21 +4,21 @@
 
 # COMMAND ----------
 
-text_rdd = sc.textFile('/FileStore/tables/SampleText.txt') # RDD of string
+text_rdd = sc.textFile('/FileStore/tables/SampleText.txt') # RDD[str]
 
 def str_split(line):
   return line.split(' ')
-splitted_rdd = text_rdd.flatMap(str_split) # RDD of list of string
+splitted_rdd = text_rdd.flatMap(str_split) # RDD[List[str]]
 
 def word_pair(word):
   return (word, 1)
-word_pair_rdd = splitted_rdd.map(word_pair)  # RDD of tuple (string, int)
+word_pair_rdd = splitted_rdd.map(word_pair)  # RDD[(str, int)]
 
 def sum(cnt1, cnt2):
   return (cnt1 + cnt2)
-word_count_rdd = word_pair_rdd.reduceByKey(sum) # RDD of tuple (string, int)
+word_count_rdd = word_pair_rdd.reduceByKey(sum) # RDD[(str, int)]
 
-word_count_rdd.take(5) # list of tuple (string, int)
+word_count_rdd.take(5) # dict(str, int)
 
 
 # COMMAND ----------
@@ -43,62 +43,14 @@ num_rdd_parts.collect()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.3 - repartition() and coalesce() function **
+# MAGIC ** Example 1.3 - Applying some basic data transformation **
 
 # COMMAND ----------
 
-bigger_rdd = sc.parallelize(range(1, 1001), 8)
-bigger_rdd.take(3)
-
-# COMMAND ----------
-
-bigger_rdd.getNumPartitions()
-
-# COMMAND ----------
-
-bigger_rdd.count()
-
-# COMMAND ----------
-
-def list_len(l):
-  return len(l)
-bigger_rdd.glom().map(list_len).collect()
-
-# COMMAND ----------
-
-bigger_rdd.repartition(10).saveAsTextFile('/FileStore/tables/biggerRdd/ten')
-sc.textFile('/FileStore/tables/biggerRdd/ten').getNumPartitions()
-
-
-# COMMAND ----------
-
-bigger_rdd.repartition(10).glom().map(lambda rec: len(rec)).collect()
-
-# COMMAND ----------
-
-bigger_rdd.repartition(5).saveAsTextFile('/FileStore/tables/biggerRdd/four')
-sc.textFile('/FileStore/tables/biggerRdd/four').getNumPartitions()
-
-
-# COMMAND ----------
-
-bigger_rdd.repartition(5).glom().map(lambda rec: len(rec)).collect()
-
-# COMMAND ----------
-
-bigger_rdd.coalesce(6).saveAsTextFile('dbfs:/FileStore/tables/biggerRdd/coalesce')
-sc.textFile('/FileStore/tables/biggerRdd/coalesce').getNumPartitions()
-
-# Homework: Is the number of records same in each of the partitions for both repartition() and coalesce()? Justify the full shufling meaning!
-
-
-# COMMAND ----------
-
-bigger_rdd.coalesce(6).glom().map(lambda rec: len(rec)).collect()
-
-# COMMAND ----------
-
-txn_list = ['txn01~1000', 'txn02~2000', 'txn03~1000', 'txn04~2000']
+txn_list = ['txn01~1000', 
+            'txn02~2000', 
+            'txn03~1000', 
+            'txn04~2000']
 txn_rdd = sc.parallelize(txn_list)
 
 def strSplit(line):
@@ -117,11 +69,10 @@ txn_amt_rdd.reduce(sum)
 # COMMAND ----------
 
 txn_list = ['txn01~1000', 'txn02~2000', 'txn03~1000', 'txn04~2000']
-txn_rdd = sc.parallelize(txn_list)
-
-splitted_txn_rdd = txn_rdd.map(lambda rec: rec.split('~'))
-txn_amt_rdd = splitted_txn_rdd.map(lambda rec: float(rec[1]))
-txn_amt_rdd.reduce(lambda amt1, amt2: amt1 + amt2)
+sc.parallelize(txn_list)\
+  .map(lambda rec: rec.split('~'))\
+  .map(lambda rec: float(rec[1]))\
+  .reduce(lambda amt1, amt2: amt1 + amt2)
 
 
 # COMMAND ----------
@@ -156,13 +107,69 @@ logs_rdd \
 
 # COMMAND ----------
 
-# Benefits of Laziness for Large - Scale Data
-# Tungsten Optimizer
+# MAGIC %md
+# MAGIC ** Example 1.4 - repartition() and coalesce() function **
+
+# COMMAND ----------
+
+bigger_rdd = sc.parallelize(range(1, 1001), 8)
+bigger_rdd.take(3)
+
+# COMMAND ----------
+
+bigger_rdd.getNumPartitions()
+
+# COMMAND ----------
+
+bigger_rdd.count()
+
+# COMMAND ----------
+
+bigger_rdd\
+  .glom()\
+  .map(lambda rec: len(rec))\
+  .collect()
+
+# COMMAND ----------
+
+bigger_rdd.repartition(10).saveAsTextFile('/FileStore/tables/biggerRdd/ten')
+sc.textFile('/FileStore/tables/biggerRdd/ten').getNumPartitions()
+
+
+# COMMAND ----------
+
+bigger_rdd.repartition(10).glom().map(lambda rec: len(rec)).collect()
+
+# COMMAND ----------
+
+bigger_rdd.repartition(5).saveAsTextFile('/FileStore/tables/biggerRdd/four')
+sc.textFile('/FileStore/tables/biggerRdd/four').getNumPartitions()
+
+
+# COMMAND ----------
+
+bigger_rdd.repartition(5).glom().map(lambda rec: len(rec)).collect()
+
+# COMMAND ----------
+
+bigger_rdd.coalesce(6).saveAsTextFile('dbfs:/FileStore/tables/biggerRdd/coalesce')
+sc.textFile('/FileStore/tables/biggerRdd/coalesce').getNumPartitions()
+
+# Homework: Is the number of records same in each of the partitions for both repartition() and coalesce()? Justify the full shufling meaning!
+
+
+# COMMAND ----------
+
+bigger_rdd\
+  .coalesce(6)\
+  .glom()\
+  .map(lambda rec: len(rec))\
+  .collect()
 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.4 - Saving data as ObjectFile, SequenceFile and NewAPIHadoopFile **
+# MAGIC ** Example 1.5 - Saving data as TextFile, SequenceFile and NewAPIHadoopFile **
 
 # COMMAND ----------
 
@@ -205,7 +212,7 @@ sc.newAPIHadoopFile("/FileStore/tables/Reg_v53",
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.5: Set Operations **
+# MAGIC ** Example 1.6: Set Operations **
 
 # COMMAND ----------
 
@@ -246,13 +253,12 @@ et_log_rdd.subtract(mc_log_rdd).collect()
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.6: Other Useful RDD Actions **
+# MAGIC ** Example 1.7: Other Useful RDD Actions **
 
 # COMMAND ----------
 
-num_rdd = sc.parallelize(range(0, 11))
+num_rdd = sc.parallelize(range(1, 11))
 num_rdd.takeSample(False, 5)
-
 
 # COMMAND ----------
 
@@ -287,7 +293,7 @@ sc.parallelize([(10, 1), (2, 9), (3, 4), (5, 6), (2, 7)]).takeOrdered(6, lambda 
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.7: Caching and Persistence **
+# MAGIC ** Example 1.8: Caching and Persistence **
 
 # COMMAND ----------
 
@@ -323,7 +329,7 @@ logs_with_errors.count()   # faster
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ** Example 1.8: Understanding cluster topology Example **
+# MAGIC ** Example 1.9: Understanding cluster topology Example **
 
 # COMMAND ----------
 
@@ -381,6 +387,12 @@ sc.textFile('/FileStore/tables/txn_fct.csv') \
   .mapPartitions(lambda partition: (float(rec[2]) for rec in partition)) \
   .reduce(lambda amt1, amt2: amt1 + amt2)
 
+
+# COMMAND ----------
+
+sc.textFile('/FileStore/tables/txn_fct.csv') \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
+  .take(5)
 
 # COMMAND ----------
 

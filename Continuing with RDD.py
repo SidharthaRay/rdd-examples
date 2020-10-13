@@ -4,17 +4,18 @@
 
 # COMMAND ----------
 
-txn_rdd = sc.textFile("/FileStore/tables/cred_txn.csv", 5)
+txn_rdd = sc.textFile("/FileStore/tables/cred_txn.csv", 5) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
+  .map(lambda rec: rec.split('~')) \
+  .map(lambda rec: (rec[0], rec[3])) 
+
 txn_rdd.take(5)
 
 # COMMAND ----------
 
 acc_txncat_rdd = txn_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
-  .map(lambda rec: rec.split('~')) \
-  .map(lambda rec: (rec[0], rec[3])) \
   .groupByKey() \
-  .map(lambda rec: (rec[0], list(rec[1])))
+  .map(lambda rec: (rec[0], list(rec[1]))) 
 
 acc_txncat_rdd.take(5)
 
@@ -41,7 +42,7 @@ acc_txncat_rdd \
 txn_rdd = sc.textFile('/FileStore/tables/cred_txn.csv', 5)
 
 acc_txncat_rdd = txn_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], float(rec[1])))
 
@@ -60,7 +61,7 @@ acc_txncat_rdd \
 txn_rdd = sc.textFile('/FileStore/tables/cred_txn.csv', 5)
 
 acc_txncat_rdd = txn_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], (rec[3], float(rec[1]))))
 
@@ -76,6 +77,7 @@ acc_txncat_rdd \
 
 acc_txncat_rdd \
   .reduceByKey(lambda catAmt1, catAmt2: catAmt1 if(catAmt1[1] > catAmt2[1]) else catAmt2) \
+  .map(lambda rec: (rec[0], rec[1][1])) \
   .take(5)
 
 
@@ -175,12 +177,11 @@ student_rdd \
 txn_rdd = sc.textFile('/FileStore/tables/cred_txn.csv', 5)
 
 acc_txnamt_rdd = txn_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], float(rec[1])))
 
 acc_txnamt_rdd \
-  .reduceByKey(lambda amt1, amt2: amt1 + amt2) \
   .mapValues(lambda amt: (amt, 1)) \
   .reduceByKey(lambda amt1, amt2: (amt1[0] + amt2[0], amt1[1] + amt2[1])) \
   .mapValues(lambda rec: rec[0]/rec[1]) \
@@ -197,7 +198,7 @@ acc_txnamt_rdd \
 txn_rdd = sc.textFile('/FileStore/tables/cred_txn.csv', 5)
 
 txn_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], float(rec[1]))) \
   .countByKey()
@@ -211,7 +212,7 @@ txn_rdd \
 # COMMAND ----------
 
 txn_rdd = sc.textFile('/FileStore/tables/cred_txn.csv', 5) \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], float(rec[1]))) \
 
@@ -226,7 +227,7 @@ raw_cust_rdd.take(5)
 # COMMAND ----------
 
 cust_rdd = raw_cust_rdd \
-  .filter(lambda rec: 'AccNum' not in rec) \
+  .mapPartitionsWithIndex(lambda index, partition: iter(list(partition)[1:]) if index == 0 else partition) \
   .map(lambda rec: rec.split('~')) \
   .map(lambda rec: (rec[0], rec[1]))
 
